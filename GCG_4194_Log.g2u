@@ -1,0 +1,215 @@
+Program.Sub.ScreenSU.Start
+Gui.Form..Create
+Gui.Form..Caption("Date Range Selection")
+Gui.Form..Size(4470,2250)
+Gui.Form..MinX(0)
+Gui.Form..MinY(0)
+Gui.Form..Position(0,0)
+Gui.Form..BackColor(-2147483633)
+Gui.Form..MaxButton(False)
+Gui.Form..MinButton(False)
+Gui.Form..MousePointer(0)
+Gui.Form..Event(UnLoad,Form_UnLoad)
+Gui.Form.dtpBeg.Create(DatePicker)
+Gui.Form.dtpBeg.Size(1650,285)
+Gui.Form.dtpBeg.Position(270,600)
+Gui.Form.dtpEnd.Create(DatePicker)
+Gui.Form.dtpEnd.Size(1650,285)
+Gui.Form.dtpEnd.Position(2325,615)
+Gui.Form.lblbegdate.Create(Label,"Beginning Date",True,1935,255,0,270,330,True,0,"Arial",8,-2147483633,0)
+Gui.Form.lblendingdate.Create(Label,"Ending Date",True,1935,255,0,2340,345,True,0,"Arial",8,-2147483633,0)
+Gui.Form.cmdDisplay.Create(Button)
+Gui.Form.cmdDisplay.Size(1005,480)
+Gui.Form.cmdDisplay.Position(315,1095)
+Gui.Form.cmdDisplay.Caption("Display")
+Gui.Form.cmdDisplay.Event(Click,cmdDisplay_Click)
+Gui.Form2..Create
+Gui.Form2..Caption("Log View")
+Gui.Form2..Size(14985,4260)
+Gui.Form2..MinX(0)
+Gui.Form2..MinY(0)
+Gui.Form2..Position(0,0)
+Gui.Form2..BackColor(-2147483633)
+Gui.Form2..MaxButton(True)
+Gui.Form2..MinButton(True)
+Gui.Form2..MousePointer(0)
+Gui.Form2..Sizeable(False)
+Gui.Form2..Event(UnLoad,Form_UnLoad)
+Gui.Form2.GsGridControl1.Create(GsGridControl)
+Gui.Form2.GsGridControl1.Size(14370,2430)
+Gui.Form2.GsGridControl1.Position(210,285)
+Gui.Form2.cmdPurge.Create(Button)
+Gui.Form2.cmdPurge.Size(1200,495)
+Gui.Form2.cmdPurge.Position(13335,2955)
+Gui.Form2.cmdPurge.Caption("Purge")
+Gui.Form2.cmdPurge.Event(Click,cmdPurge_Click)
+Gui.Form2.cmdPurge.FontStyle(True,False,False,False,False)
+Gui.Form2.dtpPurge.Create(DatePicker)
+Gui.Form2.dtpPurge.Size(1530,285)
+Gui.Form2.dtpPurge.Position(315,3180)
+Gui.Form2.lblPurge.Create(Label,"Purge Data Before",True,1935,255,0,270,2925,True,0,"Arial",8,-2147483633,0)
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+F.Intrinsic.Control.SetErrorHandler("Main_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+V.Local.sTypes.Declare(String)
+V.Local.sFieldNames.Declare(String)
+V.Local.sData.Declare(String)
+
+'open the connection
+F.ODBC.Connection!conx.OpenConnection(V.Ambient.PDSN,V.Ambient.PUser,V.Ambient.PPass)
+
+'display the form
+gui.Form..Visible(true)
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Main_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_4194_Log.g2u",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	f.Intrinsic.Control.CallSub(form_unload)
+Function.Intrinsic.Control.EndIf
+
+
+Program.Sub.Main.End
+
+Program.Sub.cmdDisplay_Click.Start
+F.Intrinsic.Control.SetErrorHandler("Main_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+v.Local.sbegdate.Declare(string)
+v.Local.senddate.Declare(string)
+v.Local.ssql.Declare(string)
+
+'close the first form
+gui.Form..Visible(false)
+
+'set local variables as the dates selected
+V.Local.sbegdate.Set(V.Screen.Form!dtpBeg.Value)
+V.Local.senddate.Set(V.Screen.Form!dtpEnd.value)
+
+'query for the data and display it on the grid
+f.Intrinsic.String.Build("Select EMP, NAME, EMAIL, CHECKDATE, SENDER, SUBJECT, BODY from GCG_4194_Email_Pay where CHECKDATE between '{0}' and '{1}'",v.Local.sbegdate.PervasiveDate,v.Local.senddate.PervasiveDate,v.Local.ssql)
+Function.Data.DataTable.CreateFromSQL("LOG","conx",v.Local.ssql)
+'create the dataview
+f.Data.dataview.create("LOG","LOG")
+gui.Form2.GsGridControl1.addgridviewfromdataview("LOG","LOG","LOG")
+'start formatting
+gui.Form2.GsGridControl1.setcolumnproperty("LOG","Emp","Caption","EMP NUMBER")
+'start formatting
+gui.Form2.GsGridControl1.setcolumnproperty("LOG","NAME","Caption","EMP NAME")
+gui.Form2.GsGridControl1.setcolumnproperty("LOG","NAME","MaxWidth","125")
+gui.Form2.GsGridControl1.setcolumnproperty("LOG","NAME","Width","125")
+gui.Form2.GsGridControl1.setcolumnproperty("LOG","EMAIL","MaxWidth","125")
+gui.Form2.GsGridControl1.setcolumnproperty("LOG","EMAIL","Width","125")
+gui.Form2.GsGridControl1.setcolumnproperty("LOG","CHECKDATE","Caption","CHECK DATE")
+gui.Form2.GsGridControl1.setcolumnproperty("LOG","SENDER","MaxWidth","125")
+gui.Form2.GsGridControl1.setcolumnproperty("LOG","SENDER","Width","125")
+gui.Form2.GsGridControl1.setcolumnproperty("LOG","SUBJECT","MaxWidth","150")
+gui.Form2.GsGridControl1.setcolumnproperty("LOG","SUBJECT","Width","150")
+gui.Form2.GsGridControl1.setcolumnproperty("LOG","BODY","MaxWidth","225")
+gui.Form2.GsGridControl1.setcolumnproperty("LOG","BODY","Width","225")
+gui.Form2.GsGridControl1.setgridviewproperty("LOG","Editable",False)
+gui.Form2.GsGridControl1.SetColumnProperty("LOG","CHECKDATE","DisplayCustomDateTime","d")
+gui.Form2.GsGridControl1.mainview("LOG")
+
+'make the form visible
+gui.Form2..Visible(true)
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Main_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_4194_Log.g2u",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	f.Intrinsic.Control.CallSub(form_unload)
+Function.Intrinsic.Control.EndIf
+
+
+Program.Sub.cmdDisplay_Click.End
+
+Program.Sub.cmdPurge_Click.Start
+F.Intrinsic.Control.SetErrorHandler("cmdDisplay_Click_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+v.Local.spurgedate.Declare(string)
+v.Local.ssql.Declare(string)
+v.Local.sret.Declare(string)
+
+'set the value
+V.Local.spurgedate.Set(V.Screen.Form2!dtpPurge.Value)
+
+'check to make sure the date isn't today by mistake
+f.Intrinsic.Control.If(v.Local.spurgedate,=,v.Ambient.Date)
+	'inform the user
+	Function.Intrinsic.UI.MsgBox("Are you sure you want to purge all before today?","Warning!",4,v.Local.sret)
+	'if yes continue if no stop
+	f.Intrinsic.Control.If(v.Local.sret,=,"6")
+	f.Intrinsic.Control.ElseIf(v.Local.sret,=,"7")
+		f.Intrinsic.Control.ExitSub	
+	f.Intrinsic.Control.EndIf
+f.Intrinsic.Control.EndIf
+
+'delete from the table
+f.Intrinsic.String.Build("Delete from GCG_4194_Email_Pay where CHECKDATE < '{0}'",v.Local.spurgedate.PervasiveDate,v.Local.ssql)
+f.ODBC.Connection!conx.Execute(v.Local.ssql)
+
+'close the form
+gui.Form..Visible(false)
+
+f.Intrinsic.UI.Msgbox("Data has been purged")
+
+f.Intrinsic.Control.CallSub(form_unload)
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("cmdDisplay_Click_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_4194_Log.g2u",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	f.Intrinsic.Control.CallSub(form_unload)
+Function.Intrinsic.Control.EndIf
+
+
+Program.Sub.cmdPurge_Click.End
+
+Program.Sub.Form_UnLoad.Start
+F.Intrinsic.Control.SetErrorHandler("Form_Drop_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+
+'close form
+gui.Form..Visible(false)
+gui.Form2..visible(false)
+
+'closing connection and ending program
+F.ODBC.Connection!conx.Close
+Function.Intrinsic.Control.End
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Form_Drop_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_4194_Log.g2u",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	f.Intrinsic.Control.End
+
+Function.Intrinsic.Control.EndIf
+
+
+Program.Sub.Form_UnLoad.End
+
+Program.Sub.Comments.Start
+${$0$}$$}$WAW$}$11/16/2016 3:37:08 AM$}$False
+${$3$}$0$}$$}$0$}$-1$}$$}$12:00:00 AM$}$'    ShippingDashPickList.rpt report required
+Program.Sub.Comments.End
