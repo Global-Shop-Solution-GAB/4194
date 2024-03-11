@@ -1,0 +1,486 @@
+Program.Sub.ScreenSU.Start
+Gui.Form..Create
+Gui.Form..Caption("Email Validation")
+Gui.Form..Size(19935,4155)
+Gui.Form..MinX(0)
+Gui.Form..MinY(0)
+Gui.Form..Position(0,0)
+Gui.Form..BackColor(-2147483633)
+Gui.Form..MaxButton(True)
+Gui.Form..MinButton(True)
+Gui.Form..MousePointer(0)
+Gui.Form..Event(UnLoad,Unload)
+Gui.Form..Sizeable(False)
+Gui.Form.cmdDeleteAll.Create(Button)
+Gui.Form.cmdDeleteAll.Size(1155,375)
+Gui.Form.cmdDeleteAll.Position(195,3045)
+Gui.Form.cmdDeleteAll.Caption("Delete All")
+Gui.Form.cmdDeleteAll.Event(Click,cmdDeleteAll_Click)
+Gui.Form.cmdSend.Create(Button)
+Gui.Form.cmdSend.Size(1155,375)
+Gui.Form.cmdSend.Position(18315,3060)
+Gui.Form.cmdSend.Caption("Send")
+Gui.Form.cmdSend.Event(Click,cmdSend_Click)
+Gui.Form.GsGridControl1.Create(GsGridControl)
+Gui.Form.GsGridControl1.Size(19335,2685)
+Gui.Form.GsGridControl1.Position(180,165)
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+F.Intrinsic.Control.SetErrorHandler("Main_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+
+'A GAB script will be created that will, at time of payroll Final Register and Updates, create PDF copies of 
+'each direct deposit stub per employee and compile an email to each specific employee to be sent by Courier 2. 
+'Coded by: WAW
+'Date: 11/14/16
+
+'open connection
+F.ODBC.Connection!conx.OpenConnection(V.Ambient.PDSN,V.Ambient.PUser,V.Ambient.PPass)
+
+'call the build sub
+f.Intrinsic.Control.CallSub(build)
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Main_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_4194_Email_Stub.g2u",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	f.Intrinsic.Control.CallSub(unload)
+Function.Intrinsic.Control.EndIf
+
+
+Program.Sub.Main.End
+
+Program.Sub.Unload.Start
+F.Intrinsic.Control.SetErrorHandler("Unload_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+
+'close the form
+gui.Form..Visible(false)
+
+'close connection and end program
+F.ODBC.Connection!conx.Close
+F.Intrinsic.Control.End
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Unload_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_4194_Email_Stub.g2u",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	f.Intrinsic.Control.End
+
+Function.Intrinsic.Control.EndIf
+
+
+Program.Sub.Unload.End
+
+Program.Sub.Send.Start
+F.Intrinsic.Control.SetErrorHandler("Send_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+v.Local.ssender.Declare(string)
+v.Local.ssenderfilepath.Declare(String)
+v.Local.bexists.Declare(boolean)
+v.Local.susername.Declare(string)
+v.Local.suseremail.Declare(string)
+
+'build the sender filepath
+f.Intrinsic.String.Build("{0}\{1}",v.Caller.FilesDir,"GCG_DEF_DIR_DEP_SENDER.txt",v.Local.ssenderfilepath)
+'see if the file exists
+f.Intrinsic.File.Exists(v.Local.ssenderfilepath,v.Local.bexists)
+f.Intrinsic.Control.If(v.Local.bexists,=,True)
+	'get the data from the file
+	f.Intrinsic.File.File2String(v.Local.ssenderfilepath,v.Local.ssender)
+	'split the string
+	f.Intrinsic.String.Split(v.Local.ssender,"*!*",v.Local.ssender)
+f.Intrinsic.Control.Else
+	'otherwise use the user and thheir email address
+	F.Global.Security.GetFullName(V.Caller.User,V.Local.sUserName)
+	F.Global.Security.GetUserEmail(V.Caller.User,V.Local.sUserEmail)
+	f.Intrinsic.String.Build("{0}*!*{1}",v.Local.susername.Trim,v.Local.suseremail.trim,v.Local.ssender)
+f.Intrinsic.Control.EndIf
+
+
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Send_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_4194_Email_Stub.g2u",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	f.Intrinsic.Control.CallSub(unload)
+Function.Intrinsic.Control.EndIf
+
+
+Program.Sub.Send.End
+
+Program.Sub.Build.Start
+F.Intrinsic.Control.SetErrorHandler("Build_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+V.Local.sEmp.Declare(String)
+V.Local.sQuery.Declare(String)
+v.Local.sret.Declare(string)
+V.Local.iUB.Declare(Long)
+v.Local.sdata.Declare(string)
+v.Local.stypes.Declare(string)
+v.Local.sfieldnames.Declare(string)
+v.Local.semailtext.Declare(string)
+v.Local.semailtextfilepath.Declare(string)
+v.Local.bexists.Declare(boolean)
+v.Local.sbody.Declare(string)
+v.Local.ssubject.Declare(string)
+v.Local.bcustom.Declare(boolean,false)
+v.Local.i.Declare(long)
+v.Local.sbodybuild.Declare(string)
+v.Local.ssubjectbuild.Declare(string)
+v.Local.scheckdate.Declare(string)
+
+'build the textfile path
+f.Intrinsic.String.Build("{0}\GAB\GAS\{1}",v.Caller.PluginsDir,"GCG_DIR_DEP_EMAIL.txt",v.Local.semailtextfilepath)
+
+'check if the file exists
+f.Intrinsic.File.Exists(v.Local.semailtextfilepath,v.Local.bexists)
+f.Intrinsic.Control.If(v.Local.bexists,=,"True")
+	'set the boolean to true
+	v.Local.bcustom.Set(true)
+	f.Intrinsic.File.File2String(v.Local.semailtextfilepath,v.Local.semailtext)
+	'split the subject and body by *!*
+	f.Intrinsic.String.Split(v.Local.semailtext.Trim,"*!*",v.Local.semailtext)
+	'set the subject and the body
+	v.Local.ssubject.Set(v.Local.semailtext(0))
+	v.Local.sbody.Set(v.Local.semailtext(1))
+f.Intrinsic.Control.Else
+	'use a default subject and body
+	v.Local.ssubject.Set("Direct Deposit Notification")
+	v.Local.sbody.Set("Please see attached")
+f.Intrinsic.Control.EndIf
+
+
+'V.Local.sQuery.set("select EMPLOYEE_MSTR.EMPLOYEE as EMP, EMPLOYEE_MSTR.EMAIL_ADDR as Email, EMPLOYEE_MSTR.NAME as NAME, BI_PAYROLL_CHKS.TRMNL as TRMNL, BI_PAYROLL_CHKS.Check_Date as CHECKDATE, BI_PAYROLL_CHKS.RPTID as RPTID from EMPLOYEE_MSTR inner join BI_PAYROLL_CHKS on EMPLOYEE_MSTR.EMPLOYEE = BI_PAYROLL_CHKS.EMPLOYEE")
+F.Intrinsic.String.Build("select DISTINCT V_EMPLOYEE_MSTR.EMPLOYEE as EMP, V_EMPLOYEE_MSTR.EMAIL_ADDR as Email, V_EMPLOYEE_MSTR.NAME as NAME, V_BI_PAYROLL_CHKS.TRMNL, V_BI_PAYROLL_CHKS.Check_Date as CHECKDATE, V_BI_PAYROLL_CHKS.RPTID from V_EMPLOYEE_MSTR inner join V_BI_PAYROLL_CHKS on V_EMPLOYEE_MSTR.EMPLOYEE = V_BI_PAYROLL_CHKS.EMPLOYEE Where V_BI_PAYROLL_CHKS.Check_Date <> '1900-01-01' And V_BI_PAYROLL_CHKS.TRMNL = '{0}'",V.Caller.Terminal,V.Local.sQuery)
+Function.Data.DataTable.CreateFromSQL("Email","conx",v.Local.sQuery,true)
+f.Data.DataTable.AddColumn("Email","Subject","String")
+f.Data.DataTable.AddColumn("Email","Body","String")
+f.Data.DataTable.AddColumn("Email","Include","boolean")
+
+'check to see if we are loading default or custom
+f.Intrinsic.Control.If(v.Local.bcustom,=,"True")
+	'loop through the datatable
+	F.Intrinsic.Control.For(v.Local.i,0,v.dataTable.Email.RowCount--,1)
+		'replace data in the body and subject with the specified wildcards
+		f.Intrinsic.String.Replace(v.Local.sbody.Trim,"%EMPLOYEE ID%",v.DataTable.Email(v.Local.i).Emp.fieldvaltrim,v.Local.sbodybuild)
+		f.Intrinsic.String.Replace(v.Local.sbodybuild.Trim,"%EMPNAME%",v.DataTable.Email(v.Local.i).Name.fieldvaltrim,v.Local.sbodybuild)
+		f.Intrinsic.String.Replace(v.Local.sbodybuild.Trim,"%CHECKDATE%",v.DataTable.Email(v.Local.i).CHECKDate.fieldvaltrim,v.Local.sbodybuild)
+		f.Intrinsic.String.Replace(v.Local.sbodybuild.Trim,"%COMPANY%",v.Caller.CompanyCode,v.Local.sbodybuild)
+		f.Intrinsic.String.Replace(v.Local.ssubject.Trim,"%EMPLOYEE ID%",v.DataTable.Email(v.Local.i).Emp.fieldvaltrim,v.Local.ssubjectbuild)
+		f.Intrinsic.String.Replace(v.Local.ssubjectbuild.Trim,"%EMPNAME%",v.DataTable.Email(v.Local.i).Name.fieldvaltrim,v.Local.ssubjectbuild)
+		f.Intrinsic.String.Replace(v.Local.ssubjectbuild.Trim,"%CHECKDATE%",v.DataTable.Email(v.Local.i).CheckDate.fieldvaltrim,v.Local.ssubjectbuild)
+		f.Intrinsic.String.Replace(v.Local.ssubjectbuild.Trim,"%COMPANY%",v.Caller.CompanyCode,v.Local.ssubjectbuild)
+		'set the values
+		F.Data.DataTable.SetValue("Email",V.Local.i,"Body",V.Local.sbodybuild)
+		F.Data.DataTable.SetValue("Email",V.Local.i,"Subject",V.Local.ssubjectbuild)
+		F.Data.DataTable.SetValue("Email",V.Local.i,"Include","True")
+	f.Intrinsic.Control.Next(v.Local.i)
+'otherwise set default
+f.Intrinsic.Control.Else
+	'loop through the datatable
+	F.Intrinsic.Control.For(v.Local.i,0,v.dataTable.Email.RowCount--,1)
+		'set the values
+		F.Data.DataTable.SetValue("Email",V.Local.i,"Body",V.Local.sbody)
+		F.Data.DataTable.SetValue("Email",V.Local.i,"Subject",V.Local.ssubject)
+		F.Data.DataTable.SetValue("Email",V.Local.i,"Include","True")
+		
+	f.Intrinsic.Control.Next(v.Local.i)
+f.Intrinsic.Control.EndIf
+
+'prompt the user and ask if they would like to review the emails
+Function.Intrinsic.UI.MsgBox("Would you like to verify the emails before sending?","Email Verification",4,v.Local.sret)
+
+'if user said yes let them review otherwise continue
+f.Intrinsic.Control.If(v.Local.sret,=,"6")
+	f.Intrinsic.Control.CallSub(review)
+'otherwise continue
+f.Intrinsic.Control.ElseIf(v.Local.sret,=,"7")
+	f.Intrinsic.Control.CallSub(cmdsend_click)
+f.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Build_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_4194_Email_Stub.g2u",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	f.Intrinsic.Control.CallSub(unload)
+Function.Intrinsic.Control.EndIf
+
+
+Program.Sub.Build.End
+
+Program.Sub.Review.Start
+F.Intrinsic.Control.SetErrorHandler("Review_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+
+'create the dataview
+f.Data.dataview.create("EMAIL","EMAIL")
+gui.Form.GsGridControl1.addgridviewfromdataview("EMAIL","EMAIL","EMAIL")
+
+'start formatting
+gui.Form.GsGridControl1.setcolumnproperty("EMAIL","RPTID","visible",False)
+gui.Form.GsGridControl1.setcolumnproperty("EMAIL","TRMNL","visible",False)
+gui.Form.GsGridControl1.setcolumnproperty("EMAIL","CHECKDATE","Caption","Check Date")
+gui.Form.GsGridControl1.setcolumnproperty("EMAIL","Emp","Caption","Employee")
+gui.Form.GsGridControl1.setcolumnproperty("EMAIL","Emp","MaxWidth","75")
+gui.Form.GsGridControl1.setcolumnproperty("EMAIL","Emp","Width","75")
+gui.Form.GsGridControl1.setcolumnproperty("EMAIL","CHECKDATE","MaxWidth","80")
+gui.Form.GsGridControl1.setcolumnproperty("EMAIL","CHECKDATE","Width","80")
+gui.Form.GsGridControl1.setcolumnproperty("EMAIL","SUBJECT","MaxWidth","205")
+gui.Form.GsGridControl1.setcolumnproperty("EMAIL","SUBJECT","Width","205")
+gui.Form.GsGridControl1.setcolumnproperty("EMAIL","BODY","MaxWidth","600")
+gui.Form.GsGridControl1.setcolumnproperty("EMAIL","BODY","Width","600")
+gui.Form.GsGridControl1.setcolumnproperty("EMAIL","NAME","MaxWidth","150")
+gui.Form.GsGridControl1.setcolumnproperty("EMAIL","NAME","Width","150")
+gui.Form.GsGridControl1.setcolumnproperty("EMAIL","EMAIL","MaxWidth","150")
+gui.Form.GsGridControl1.setcolumnproperty("EMAIL","EMAIL","Width","150")
+gui.Form.GsGridControl1.setcolumnproperty("EMAIL","EMAIL","allowedit",False)
+gui.Form.GsGridControl1.SetColumnProperty("EMAIL","Emp","allowedit",False)
+gui.Form.GsGridControl1.SetColumnProperty("EMAIL","NAME","allowedit",False)
+gui.Form.GsGridControl1.SetColumnProperty("EMAIL","CHECKDATE","allowedit",False)
+gui.Form.GsGridControl1.SetColumnProperty("EMAIL","BODY","readonly",false)
+gui.Form.GsGridControl1.SetColumnProperty("EMAIL","SUBJECT","readonly",false)
+gui.Form.GsGridControl1.SetColumnProperty("EMAIL","Include","readonly",false)
+gui.Form.GsGridControl1.SetColumnProperty("EMAIL","Include","allowedit",True)
+gui.Form.GsGridControl1.SetColumnProperty("EMAIL","CHECKDATE","DisplayCustomDateTime","d")
+gui.Form.GsGridControl1.mainview("EMAIL")
+
+'make the form visible
+gui.Form..Visible(true)
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Review_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_4194_Email_Stub.g2u",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	f.Intrinsic.Control.CallSub(unload)
+Function.Intrinsic.Control.EndIf
+
+
+Program.Sub.Review.End
+
+Program.Sub.cmdDeleteAll_Click.Start
+F.Intrinsic.Control.SetErrorHandler("Review_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+
+'close the form
+gui.Form..Visible(false)
+
+'inform the user emails wont be sent and close the program
+f.Intrinsic.UI.Msgbox("Emails have been deleted, no emails were sent")
+f.Intrinsic.Control.CallSub(unload)
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Review_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_4194_Email_Stub.g2u",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	f.Intrinsic.Control.CallSub(unload)
+Function.Intrinsic.Control.EndIf
+
+
+Program.Sub.cmdDeleteAll_Click.End
+
+Program.Sub.cmdSend_Click.Start
+F.Intrinsic.Control.SetErrorHandler("cmdSend_Click_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+V.Local.sName.Declare(String)
+V.Local.sVal.Declare(String)
+V.Local.sTemp.Declare(String)
+V.Local.sDir.Declare(String)
+V.Local.sFile.Declare(String)
+V.Local.bRet.Declare(Boolean)
+V.Local.iID.Declare(Long)
+V.Local.sFQN.Declare(String)
+V.Local.sRequiredParams.Declare(String)
+V.Local.sRetFile.Declare(String)
+V.Local.iBIRunID.Declare(Long)
+V.Local.iLOGID.Declare(Long)
+V.Local.bFile.Declare(Boolean)
+V.Local.sMess.Declare(String)
+V.Local.sRptID.Declare(String)
+V.Local.iTot.declare(Long)
+V.local.iCPlus1.Declare(Long)
+v.Local.i.Declare(long)
+V.Local.sSQL.declare(String)
+v.Local.ssendertextfilepath.Declare(string)
+v.Local.bexists.Declare(boolean)
+v.Local.semailtext.Declare(String)
+v.Local.bcustom.Declare(String)
+v.Local.ssendername.Declare(string)
+v.Local.ssenderemail.Declare(string)
+v.Local.ssenderfinal.Declare(String)
+v.Local.srecipientfinal.Declare(string)
+v.Local.scheckdate.Declare(string)
+v.Local.dcheckdate.Declare(date)
+V.Local.sOrd.Declare(String)
+
+'get the sender information
+'build the textfile path
+f.Intrinsic.String.Build("{0}\GAB\GAS\{1}",v.Caller.PluginsDir,"GCG_DEF_DIR_DEP_SENDER.txt",v.Local.ssendertextfilepath)
+
+'check if the file exists
+f.Intrinsic.File.Exists(v.Local.ssendertextfilepath,v.Local.bexists)
+f.Intrinsic.Control.If(v.Local.bexists,=,"True")
+	'set the boolean to true
+	v.Local.bcustom.Set(true)
+	f.Intrinsic.File.File2String(v.Local.ssendertextfilepath,v.Local.semailtext)
+	'split the subject and body by *!*
+	f.Intrinsic.String.Split(v.Local.semailtext.Trim,"*!*",v.Local.semailtext)
+	'set the subject and the body
+	v.Local.ssendername.Set(v.Local.semailtext(0))
+	v.Local.ssenderemail.Set(v.Local.semailtext(1))
+f.Intrinsic.Control.Else
+	F.Global.Security.GetFullName(V.Caller.User,V.Caller.CompanyCode,V.Local.ssendername)
+	f.Global.Security.GetUserEmail(v.Caller.User,v.Caller.CompanyCode,v.Local.ssenderemail)
+f.Intrinsic.Control.EndIf
+
+	f.Intrinsic.String.Build("{0}*!*{1}",v.Local.ssenderemail,v.Local.ssendername,v.Local.ssenderfinal)
+'close the form
+gui.Form..Visible(false)
+
+'check to make sure the directory exists
+F.Intrinsic.String.Concat(V.Caller.BusintDir,"\Export","\Paystubs",V.Local.sDir)
+F.Intrinsic.File.DirExists(V.Local.sDir,V.Local.bRet)
+F.Intrinsic.Control.If(V.Local.bRet,=,False)
+	F.Intrinsic.File.CreateDir(V.Local.sDir)
+F.Intrinsic.Control.EndIf
+
+'Get rid of any rows that don't have an email address or name value
+F.Data.DataTable.Select("email","Email = '' OR Name = '' OR INCLUDE = False",V.Local.sOrd)
+
+'Check for no return.
+F.Intrinsic.Control.If(V.Local.sOrd,<>,"***NORETURN***")
+	F.Intrinsic.String.Split(V.Local.sOrd,"*!*",V.Local.sOrd)
+
+	F.Intrinsic.Control.For(V.Local.i,0,V.Local.sOrd.UBound,1)
+		F.Data.DataTable.DeleteRow("email",V.Local.sOrd(V.Local.i).Long)
+	F.Intrinsic.Control.Next(V.Local.i)
+F.Intrinsic.Control.EndIf
+
+'Create a dataview to loop through with only our existing rows
+F.Data.DataView.Create("email","email_view",22)
+
+'required report params
+F.Intrinsic.String.Build("{0}\PAYSTUB_{1}",V.System.Temp,V.Caller.Terminal,V.Local.sRetFile)
+
+'start the wait dialog
+F.Intrinsic.UI.InvokeWaitDialog("Paystub Email Processing...","Email Paystub Program")
+V.Local.iTot.Set(V.DataView.email!email_view.rowcount)
+
+'loop through the datatable
+F.Intrinsic.Control.For(v.Local.i,0,V.DataView.email!email_view.RowCount--,1)
+	'build the recipient string
+	f.Intrinsic.String.Build("{0}*!*{1}",V.DataView.email!email_view(v.Local.i).EMP.fieldvaltrim,V.DataView.email!email_view(v.Local.i).EMAIL.fieldvaltrim,v.Local.srecipientfinal)
+	'check to see if the user should be emailed
+	f.Intrinsic.Control.If(V.DataView.email!email_view(v.Local.i).Include.fieldvaltrim,=,True)
+		'Only keep count of those items that are actually being sent.
+		F.Intrinsic.Math.Add(V.Local.iCPlus1,1,V.Local.iCPlus1)
+		F.Intrinsic.String.Build("Emailing paystub for Employee : {0} {1}  Name: {2}{1}{1}{1} {3} of {4}",V.DataView.email!email_view(v.Local.i).EMP.fieldvaltrim,V.Ambient.Tab,V.DataView.email!email_view(v.Local.i).Name.fieldvaltrim,V.local.iCPlus1,V.Local.iTot,V.Local.sMess)
+		F.Intrinsic.UI.ChangeWaitStatus(V.Local.sMess,V.Local.i,0,V.DataView.email!email_view.rowcount)
+		'so now we need to first figure which report we need to print out.
+		V.Local.sRptID.Set(V.DataView.email!email_view(v.Local.i).RPTID.fieldvaltrim)
+		f.Intrinsic.String.Build("{0}*!*{1}*!*{2}",v.Caller.Terminal,v.Local.sRptID,V.DataView.email!email_view(v.Local.i).EMP.fieldvaltrim,v.Local.sVal)
+		V.Local.sTemp.Set(V.DataView.email!email_view(v.Local.i).CHECKDATE.fieldvaltrim)
+		F.Intrinsic.String.Concat(V.DataView.email!email_view(v.Local.i).EMP.fieldvaltrim,"_",V.local.sTemp,".pdf",V.Local.sFile)
+		f.Intrinsic.File.MakeFilenameFriendly(v.Local.sFile,v.Local.sFile)
+		'make it file name friendly
+		F.Intrinsic.String.Concat(V.Local.sDir,"\",V.Local.sFile,V.Local.sFQN)
+		'Getting Rund ID and Long ID
+		F.Global.BI.GetRunID(V.Local.iBIRUNID)
+		F.Global.BI.GetIDFromName("GCG_4194_LongChk.rpt",V.Local.iID)
+		F.Global.BI.StartLogging(V.Local.iBIRUNID,V.Local.iID,-1,"GCG_4194_LongChk.rpt",V.Local.iLOGID)
+		'split the paramters and values
+		V.Local.sRequiredParams.Set("TERMINAL*!*Rptid*!*Employee")
+		F.Intrinsic.String.Split(V.Local.sRequiredParams,"*!*",V.Local.sRequiredParams)
+		F.Intrinsic.String.Split(V.Local.sVal,"*!*",V.Local.sVal)	
+		'save the report
+		F.Global.BI.SaveReport(V.Local.iid,1,V.Local.sRequiredParams,v.Local.sVal,V.Local.sFQN)
+		F.Global.BI.StopLogging(V.Local.iLOGID)
+		'check to see if the file was created, if not inform the user
+		F.Intrinsic.File.Exists(V.Local.sFQN,V.Local.bFile)
+		F.Intrinsic.Control.If(V.Local.bFile,=,False)
+			F.Intrinsic.UI.Msgbox("PDF was not created.Please contact Global Shop.")
+			F.Intrinsic.Control.CallSub(Unload)
+		F.Intrinsic.Control.EndIf
+		F.Intrinsic.File.Exists(V.Local.sFQN,V.Local.bRet)
+		F.Intrinsic.Control.If(V.Local.bRet,=,True)
+			'store in the paycheck stub directory
+			F.Intrinsic.String.Concat(V.Local.sFile,"*!*",V.Local.sDir,V.Local.sFile)
+			F.Global.Security.getuserID(V.Caller.User,V.Caller.CompanyCode,V.Local.iID)
+			'save the data to the custom table
+			v.Local.scheckdate.Set(V.DataView.email!email_view(v.Local.i).CHECKDATE.fieldvaltrim)
+			'check if 0's
+			f.Intrinsic.Control.If(v.Local.scheckdate,=,"000000")
+				v.Local.scheckdate.Set("01011900")
+			f.Intrinsic.Control.EndIf
+			'convert the dates
+			f.Intrinsic.Date.ConvertDString(v.Local.scheckdate,"MMDDYYYY",v.Local.dcheckdate.PervasiveDate)
+			'saved information to log table
+			F.ODBC.Connection!conx.OpenRecordsetRW("rst","select * from GCG_4194_Email_PAY")
+			F.ODBC.conx!rst.AddNew
+			F.ODBC.conx!rst.Set!Emp(V.DataView.email!email_view(v.Local.i).emp.fieldvaltrim)
+			F.ODBC.conx!rst.Set!Name(V.DataView.email!email_view(v.Local.i).Name.fieldvaltrim)
+			F.ODBC.Conx!rst.Set!Email(V.DataView.email!email_view(v.Local.i).Email.fieldvaltrim)
+			F.ODBC.Conx!rst.Set!CHECKDATE(v.Local.dcheckdate.PervasiveDate)
+			F.ODBC.Conx!rst.Set!SENDER(v.Local.ssendername)
+			F.ODBC.Conx!rst.Set!BODY(V.DataView.email!email_view(v.Local.i).Body.fieldvaltrim)
+			F.ODBC.Conx!rst.Set!SUBJECT(V.DataView.email!email_view(v.Local.i).Subject.fieldvaltrim)
+			F.ODBC.Conx!rst.Set!RPTID(V.DataView.email!email_view(v.Local.i).RPTID.fieldvaltrim)
+			F.ODBC.conx!rst.Update
+			f.ODBC.conx!rst.Close
+			'email the selected email addressed and attach a copy of the pay stub in the email
+			Function.Global.Messaging.QueueMessage(V.Caller.CompanyCode,V.local.iID,"",V.DataView.email!email_view(v.Local.i).Subject.fieldvaltrim,v.Local.ssenderfinal,v.Local.srecipientfinal,V.DataView.email!email_view(v.Local.i).Body.fieldvaltrim,1,"",False,"",,"","","","","",V.Local.sfile,False)
+		F.Intrinsic.Control.EndIf
+	f.Intrinsic.Control.EndIf
+f.Intrinsic.Control.Next(v.Local.i)
+
+F.Intrinsic.UI.CloseWaitDialog
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("cmdSend_Click_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_4194_Email_Stub.g2u",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	f.Intrinsic.Control.CallSub(unload)
+Function.Intrinsic.Control.EndIf
+
+
+Program.Sub.cmdSend_Click.End
+
+Program.Sub.Form_UnLoad.Start
+Program.Sub.Form_UnLoad.End
+
+Program.Sub.Comments.Start
+${$0$}$$}$WAW$}$11/14/2016 10:38:17 AM$}$False
+${$3$}$0$}$$}$0$}$-1$}$$}$12:00:00 AM$}$'    ShippingDashPickList.rpt report required
+Program.Sub.Comments.End
